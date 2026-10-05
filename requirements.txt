@@ -1,0 +1,11 @@
+easydict==1.9
+matplotlib==3.5.3
+numpy==1.19.5
+pandas==1.4.3
+pillow==9.2.0
+scikit_learn==0.24.1
+scipy==1.8.1
+sentence_transformers==2.2.2
+openai>=1.0.0
+tqdm==4.64.0
+transformers==4.20.1

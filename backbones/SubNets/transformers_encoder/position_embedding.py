@@ -1,0 +1,70 @@
+import math
+
+import torch
+import torch.nn as nn
+
+# Code adapted from the fairseq repo.
+
+def make_positions(tensor, padding_idx, left_pad):
+    """Assign position indices to non-padding tokens."""
+    max_pos = padding_idx + 1 + tensor.size(1)
+    device = tensor.get_device()
+    buf_name = f'range_buf_{device}'
+    if not hasattr(make_positions, buf_name):
+        setattr(make_positions, buf_name, tensor.new())
+    setattr(make_positions, buf_name, getattr(make_positions, buf_name).type_as(tensor))
+    if getattr(make_positions, buf_name).numel() < max_pos:
+        torch.arange(padding_idx + 1, max_pos, out=getattr(make_positions, buf_name))
+    mask = tensor.ne(padding_idx)
+    positions = getattr(make_positions, buf_name)[:tensor.size(1)].expand_as(tensor)
+    if left_pad:
+        positions = positions - mask.size(1) + mask.long().sum(dim=1).unsqueeze(1)
+    new_tensor = tensor.clone()
+    return new_tensor.masked_scatter_(mask, positions[mask]).long()
+
+
+class SinusoidalPositionalEmbedding(nn.Module):
+    """Generate sinusoidal positional embeddings."""
+
+    def __init__(self, embedding_dim, padding_idx=0, left_pad=0, init_size=128):
+        super().__init__()
+        self.embedding_dim = embedding_dim
+        self.padding_idx = padding_idx
+        self.left_pad = left_pad
+        self.weights = dict()
+        self.register_buffer('_float_tensor', torch.FloatTensor(1))
+
+    @staticmethod
+    def get_embedding(num_embeddings, embedding_dim, padding_idx=None):
+        """Build a sinusoidal embedding table."""
+        half_dim = embedding_dim // 2
+        emb = math.log(10000) / (half_dim - 1)
+        emb = torch.exp(torch.arange(half_dim, dtype=torch.float) * -emb)
+        emb = torch.arange(num_embeddings, dtype=torch.float).unsqueeze(1) * emb.unsqueeze(0)
+        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=1).view(num_embeddings, -1)
+        if embedding_dim % 2 == 1:
+            # Pad odd-dimensional embeddings with zeros.
+            emb = torch.cat([emb, torch.zeros(num_embeddings, 1)], dim=1)
+        if padding_idx is not None:
+            emb[padding_idx, :] = 0
+        return emb
+
+    def forward(self, input):
+        """Return embeddings for a batch of token-index sequences."""
+        bsz, seq_len = input.size()
+        max_pos = self.padding_idx + 1 + seq_len
+        device = input.get_device()
+        if device not in self.weights or max_pos > self.weights[device].size(0):
+            # Cache tables by device and required sequence length.
+            self.weights[device] = SinusoidalPositionalEmbedding.get_embedding(
+                max_pos,
+                self.embedding_dim,
+                self.padding_idx,
+            )
+        self.weights[device] = self.weights[device].type_as(self._float_tensor).to(input.device)
+        positions = make_positions(input, self.padding_idx, self.left_pad)
+        return self.weights[device].index_select(0, positions.reshape(-1)).reshape(bsz, seq_len, -1).detach()
+
+    def max_positions(self):
+        """Return the supported position limit."""
+        return int(1e5)

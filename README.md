@@ -5,7 +5,6 @@ This repository contains the official PyTorch implementation of [*Unsupervised M
 ## 1. Introduction
 
 Unsupervised multimodal intent discovery seeks latent intents from unlabeled multimodal dialogue data. MCSP first identifies representative samples from initial clusters, obtains high-level semantic concepts through MLLM-guided contrastive reasoning or an included concept bank, and then propagates these concepts over a semantically weighted graph. The propagated pseudo-labels are used to refine multimodal representations.
-
 The implementation supports text, video, and audio features and includes configurations for MIntRec, MIntRec2.0, and MELD-DA.
 
 ## 2. Dependencies

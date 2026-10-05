@@ -1,11 +1,18 @@
+# Python 3.9.23; install the CUDA build of PyTorch as described in README.md.
 easydict==1.9
-matplotlib==3.5.3
-numpy==1.19.5
+huggingface-hub==0.10.1
+matplotlib==3.9.4
+nltk==3.9.2
+numpy==1.24.4
+openai==2.9.0
 pandas==1.4.3
-pillow==9.2.0
-scikit_learn==0.24.1
+Pillow==11.3.0
+scikit-learn==0.24.1
 scipy==1.8.1
-sentence_transformers==2.2.2
-openai>=1.0.0
+sentence-transformers==2.2.2
+sentencepiece==0.2.1
+tokenizers==0.12.1
+torch==2.8.0
+torchvision==0.23.0
 tqdm==4.64.0
 transformers==4.20.1

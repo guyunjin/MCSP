@@ -1,36 +1,40 @@
 # Unsupervised Multimodal Intent Discovery via MLLM-Guided Concept Generation and Semantic Propagation
 
-This repository contains the official PyTorch implementation of [*Unsupervised Multimodal Intent Discovery via MLLM-Guided Concept Generation and Semantic Propagation*](https://arxiv.org/abs/2607.21908) (**Accepted at ACM Multimedia 2026 (MM '26)**).
+This repository provides the official PyTorch implementation of:
+
+[Unsupervised Multimodal Intent Discovery via MLLM-Guided Concept Generation and Semantic Propagation](https://arxiv.org/abs/2607.21908) (**Accepted at ACM Multimedia 2026, MM '26**).
 
 ## 1. Introduction
 
-Unsupervised multimodal intent discovery seeks latent intents from unlabeled multimodal dialogue data. MCSP first identifies representative samples from initial clusters, obtains high-level semantic concepts through MLLM-guided contrastive reasoning or an included concept bank, and then propagates these concepts over a semantically weighted graph. The propagated pseudo-labels are used to refine multimodal representations.
-The implementation supports text, video, and audio features and includes configurations for MIntRec, MIntRec2.0, and MELD-DA.
+Unsupervised multimodal intent discovery aims to identify latent intents from unlabeled text, video, and audio. We propose MCSP, a framework that combines MLLM-guided concept generation with semantic propagation. MCSP selects reliable cluster representatives, generates interpretable intent concepts through contrastive reasoning, and uses these concepts to guide graph propagation and representation learning.
+
+This repository includes implementations and configurations for MIntRec, MIntRec2.0, and MELD-DA.
 
 ## 2. Dependencies
 
-The original experiments use Python 3.8, PyTorch 1.8.1, and CUDA 11.1. Create an environment whose PyTorch build matches the CUDA version available on your machine.
+The recorded server environment uses **Python 3.9.23**, **PyTorch 2.8.0**, and **CUDA 12.8**. We recommend using Anaconda to create an environment:
 
 ```bash
-conda create -n mcsp python=3.8 -y
+conda create -n mcsp python=3.9.23 pip=25.2 -y
 conda activate mcsp
 
-pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 \
-  -f https://download.pytorch.org/whl/torch_stable.html
-pip install -r requirements.txt
+python -m pip install torch==2.8.0 torchvision==0.23.0 \
+  --index-url https://download.pytorch.org/whl/cu128
+python -m pip install -r requirements.txt
+python -m pip check
 ```
 
-The optional online MLLM concept-generation path requires an OpenAI-compatible client. It is included in `requirements.txt`; use a version compatible with your Python runtime if your environment requires a constraint.
+The existing server environment is named `umc`; it does not need to be renamed. Keep the pinned NLP dependency versions together. The package versions come from the server environment report; a fresh installation and an end-to-end run of this release have not yet been independently verified. See [environment notes](docs/environment.md) for the full record and a GPU computation check.
 
-## 3. Data and Backbone Preparation
+## 3. Usage
 
-Obtain each dataset from its original release and follow its license and access conditions:
+### 3.1 Data
 
-- [MIntRec](https://github.com/thuiar/MIntRec)
-- [MIntRec2.0](https://github.com/thuiar/MIntRec2.0)
-- [MELD](https://github.com/declare-lab/MELD)
+The data source is the same as [HIER](https://github.com/thuiar/HIER):
 
-`--data_path` must point to the directory that contains the dataset directories. The loader expects the following structure; feature-file names are supplied on the command line.
+[Download data from Google Drive](https://drive.google.com/drive/folders/1nCkhkz72F6ucseB73XVbqCaDG-pjhpSS)
+
+MCSP loads TSV utterance files and pre-extracted Swin video and WavLM audio features. Prepare them in the following structure:
 
 ```text
 DATA_ROOT/
@@ -60,30 +64,61 @@ DATA_ROOT/
         └── wavlm_feats.pkl
 ```
 
-The code resolves the text encoder from the local path configured in [`configs/__init__.py`](configs/__init__.py). Download the uncased BERT-base checkpoint from the [official BERT release](https://github.com/google-research/bert) and either place it at `uncased_L-12_H-768_A-12/` in the repository root or change that mapping to the checkpoint directory on your machine. The directory must be readable by Hugging Face `from_pretrained` and contain the model weights, configuration, and tokenizer files.
+Set `DATA_ROOT` to the parent directory of the datasets. The feature files must be pickle dictionaries whose sample IDs match the TSV files. If the downloaded data is in another format, prepare the TSV files and feature dictionaries before running MCSP.
 
-This repository does not redistribute datasets, extracted features, pretrained model weights, or API credentials.
+For the paper's evaluation protocol, merge the original training, validation, and test partitions and repartition the samples at a 4:1 training-to-test ratio. The loader combines the supplied `train.tsv` and `dev.tsv`; use files that follow this protocol when reproducing the paper results.
 
-## 4. Usage
+Place a Hugging Face-compatible [BERT-base-uncased checkpoint](https://huggingface.co/google-bert/bert-base-uncased) at `uncased_L-12_H-768_A-12/` in the repository root. If you use another location, update both [`configs/__init__.py`](configs/__init__.py) and `pretrained_bert_model` in the selected MCSP configuration.
 
-### 4.1 Offline reproduction
+### 3.2 Configuration Files
 
-By default, `use_llm=False`. MCSP then loads the precomputed concepts in [`methods/unsupervised/MCSP/intent_concepts.json`](methods/unsupervised/MCSP/intent_concepts.json). The file contains entries for seeds `0` through `4` for MIntRec, MIntRec2.0, and MELD-DA.
+The dataset configurations are under [`configs/`](configs):
 
-The first run must create a pretraining checkpoint. In the selected configuration file, set:
+| Dataset | Configuration | Video features | Audio features |
+| --- | --- | --- | --- |
+| MIntRec | `mcsp_MIntRec.py` | `swin_feats.pkl` | `wavlm_feats.pkl` |
+| MIntRec2.0 | `mcsp_MIntRec2.py` | `swin_roi.pkl` | `wavlm_feats.pkl` |
+| MELD-DA | `mcsp_MELD-DA.py` | `swin_feats.pkl` | `wavlm_feats.pkl` |
+
+For a first run, set these values in the corresponding configuration:
 
 ```python
 'pretrain': True,
 'train': True,
 'save_model': True,
+'use_llm': False,
 ```
 
-For MIntRec, run:
+The configuration overrides command-line values with the same name. Configure `pretrain`, `train`, and `save_model` in the Python file before running an example script.
+
+With `use_llm=False`, the code loads the included [concept bank](methods/unsupervised/MCSP/intent_concepts.json), which covers seeds `0` through `4` for all three datasets. This workflow does not require an API key or remote model calls.
+
+To generate new concepts online, set `use_llm=True`, provide `MCSP_API_KEY` through the environment, and configure a video-capable `llm_model_name` supported by the endpoint in [`manager.py`](methods/unsupervised/MCSP/manager.py). Review the raw-video paths and provider settings in [`mllm_reasoning.py`](methods/unsupervised/MCSP/mllm_reasoning.py). The included concept bank is the default workflow.
+
+### 3.3 Run Training / Testing
+
+Run commands from the repository root. Each script trains and then evaluates seeds `0` through `4`:
+
+```bash
+export DATA_ROOT=/path/to/DATA_ROOT
+export GPU_ID=0
+
+# MIntRec
+bash examples/run_mcsp.sh
+
+# MIntRec2.0
+bash examples/run_mcsp_mintrec2.sh
+
+# MELD-DA
+bash examples/run_mcsp_meld.sh
+```
+
+For a single MIntRec run:
 
 ```bash
 python run.py \
   --dataset MIntRec \
-  --data_path /path/to/DATA_ROOT \
+  --data_path "$DATA_ROOT" \
   --multimodal_method mcsp \
   --method mcsp \
   --text_backbone bert-base-uncased \
@@ -91,49 +126,53 @@ python run.py \
   --video_feats_path swin_feats.pkl \
   --audio_feats_path wavlm_feats.pkl \
   --seed 0 \
-  --gpu_id 0 \
+  --gpu_id "$GPU_ID" \
   --save_results \
   --results_file_name mintrec_mcsp.csv \
   --output_path outputs/MIntRec
 ```
 
-For later runs using the saved pretraining checkpoint, reset `pretrain` to `False` and keep `train=True`. Use the same dataset, seed, and `--output_path` so that the checkpoint remains at:
+To reuse a saved pretraining checkpoint, set `pretrain=False` and `train=True`. For testing only, set `pretrain=False` and `train=False`, then run the same command with the dataset, seed, backbone, and output path used during training. Testing requires both the pretraining and final checkpoints:
 
 ```text
-outputs/MIntRec/mcsp_mcsp_MIntRec_bert-base-uncased_0/models/pretrain/pytorch_model.bin
+<output_path>/mcsp_mcsp_<dataset>_bert-base-uncased_<seed>/models/
+├── pretrain/
+│   └── pytorch_model.bin
+└── pytorch_model.bin
 ```
 
-To run the other supported datasets, use the matching configuration and feature file:
+Metrics, timing summaries, representative samples, and prediction artifacts are written below `--output_path`. Aggregate test metrics are saved under `results/` when `--save_results` is enabled.
 
-| Dataset | Configuration | Video features | Audio features |
-| --- | --- | --- | --- |
-| MIntRec | `mcsp_MIntRec` | `swin_feats.pkl` | `wavlm_feats.pkl` |
-| MIntRec2.0 | `mcsp_MIntRec2` | `swin_roi.pkl` | `wavlm_feats.pkl` |
-| MELD-DA | `mcsp_MELD-DA` | `swin_feats.pkl` | `wavlm_feats.pkl` |
+## 4. Model
 
-The scripts under [`examples/`](examples) run the five seeds used by the included concept bank. Set `DATA_ROOT` and, optionally, `GPU_ID` before execution:
+The overview of MCSP:
 
-```bash
-DATA_ROOT=/path/to/DATA_ROOT GPU_ID=0 bash examples/run_mcsp.sh
-```
+![MCSP framework: multimodal pretraining, MLLM-guided concept generation, and semantic propagation](assets/framework.png)
 
-### 4.2 Optional MLLM concept generation
+The framework has three stages:
 
-Set `use_llm=True` in the selected MCSP configuration and provide an API key through an environment variable:
+1. **Multimodal unsupervised pretraining:** learn a joint representation using modality-masked contrastive views.
+2. **MLLM-guided concept generation:** select reliable representatives and derive interpretable intent concepts through contrastive reasoning.
+3. **Semantic propagation:** adjust graph edges with concept similarity, propagate concept labels, and refine representations using high-confidence samples.
 
-```bash
-export MCSP_API_KEY='your-api-key'
-```
+## 5. Experimental Results
 
-The online path may send representative text and video evidence to the configured OpenAI-compatible endpoint. Review the endpoint, model name, video paths, dataset terms, privacy requirements, and billing before enabling it. Keep credentials out of configuration files, commits, logs, and issue reports.
+Results reported in the paper are shown below. Scores are averaged over five runs with seeds `0` through `4` and a known number of intent categories. The Qwen and Gemini variants use Qwen3-VL and Gemini-3.0-Pro, respectively, for concept generation.
 
-## 5. Outputs
+| Dataset | Method | ACC | ARI | NMI | FMI | Avg. |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| MIntRec | MCSP-Qwen | 44.54 | 24.85 | 49.07 | 29.61 | 37.02 |
+| MIntRec | MCSP-Gemini | 45.21 | 25.59 | 48.42 | 30.28 | 37.37 |
+| MIntRec2.0 | MCSP-Qwen | 29.54 | 15.00 | 37.37 | 18.96 | 25.22 |
+| MIntRec2.0 | MCSP-Gemini | 29.19 | 15.03 | 37.33 | 18.92 | 25.12 |
+| MELD-DA | MCSP-Qwen | 34.62 | 22.07 | 21.49 | 33.74 | 27.98 |
+| MELD-DA | MCSP-Gemini | 34.57 | 21.57 | 21.61 | 33.16 | 27.73 |
 
-Each run writes its artifacts below the selected `--output_path`, including model checkpoints, training metrics, timing summaries, representative samples, and final high-quality sample assignments. With `--save_results`, aggregate test metrics are appended to the specified CSV file under `results/`.
+These are the published experiment results. The included cached concept bank does not record the generating MLLM, so it should not be assumed to identify either variant in this table.
 
 ## 6. Citation
 
-If you use this code or paper, please cite:
+If you use this code or the results in your research, please cite:
 
 ```bibtex
 @misc{gu2026unsupervised,
@@ -149,6 +188,6 @@ If you use this code or paper, please cite:
 
 ## 7. Acknowledgements
 
-This implementation builds on and adapts components from [UMC](https://github.com/thuiar/UMC). We thank its authors and contributors for making their work available.
+Parts of this implementation build on [UMC](https://github.com/thuiar/UMC), with Transformer components adapted from [Multimodal-Transformer](https://github.com/yaohungt/Multimodal-Transformer) and [fairseq](https://github.com/facebookresearch/fairseq). We thank the authors and contributors for sharing their work.
 
-For questions or reproducibility issues, please open a GitHub issue with the operating system, package versions, command, configuration file, and relevant error log.
+For questions or reproducibility issues, please open a GitHub issue with your environment, command, configuration, and relevant error log.

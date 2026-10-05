@@ -159,14 +159,7 @@ The framework has three stages:
 
 Results reported in the paper are shown below. Scores are averaged over five runs with seeds `0` through `4` and a known number of intent categories. The Qwen and Gemini variants use Qwen3-VL and Gemini-3.0-Pro, respectively, for concept generation.
 
-| Dataset | Method | ACC | ARI | NMI | FMI | Avg. |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| MIntRec | MCSP-Qwen | 44.54 | 24.85 | 49.07 | 29.61 | 37.02 |
-| MIntRec | MCSP-Gemini | 45.21 | 25.59 | 48.42 | 30.28 | 37.37 |
-| MIntRec2.0 | MCSP-Qwen | 29.54 | 15.00 | 37.37 | 18.96 | 25.22 |
-| MIntRec2.0 | MCSP-Gemini | 29.19 | 15.03 | 37.33 | 18.92 | 25.12 |
-| MELD-DA | MCSP-Qwen | 34.62 | 22.07 | 21.49 | 33.74 | 27.98 |
-| MELD-DA | MCSP-Gemini | 34.57 | 21.57 | 21.61 | 33.16 | 27.73 |
+![Experimental results on MIntRec, MIntRec2.0, and MELD-DA](assets/experimental_results.png)
 
 These are the published experiment results. The included cached concept bank does not record the generating MLLM, so it should not be assumed to identify either variant in this table.
 

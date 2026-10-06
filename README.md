@@ -6,7 +6,7 @@ This repository provides the official PyTorch implementation of:
 
 ## 1. Introduction
 
-Unsupervised multimodal intent discovery aims to identify latent intents from unlabeled text, video, and audio. We propose MCSP, a framework that combines MLLM-guided concept generation with semantic propagation. MCSP selects reliable cluster representatives, generates interpretable intent concepts through contrastive reasoning, and uses these concepts to guide graph propagation and representation learning.
+Unsupervised multimodal intent discovery aims to uncover latent intents from unlabeled multimodal dialogues, but remains challenging due to the lack of explicit semantic supervision. Existing methods often provide limited interpretability, as their refinement mainly relies on geometric similarity rather than high-level semantic guidance. To address these limitations, we propose MCSP, a fully unsupervised method that introduces semantic refinement based on concepts into multimodal intent discovery by integrating MLLM-guided contrastive reasoning with semantic propagation.
 
 ## 2. Dependencies
 
@@ -28,7 +28,7 @@ python -m pip check
 
 The data can be downloaded through the following links: [Download data from Google Drive](https://drive.google.com/drive/folders/1nCkhkz72F6ucseB73XVbqCaDG-pjhpSS)
 
-MCSP loads TSV utterance files and pre-extracted video and audio features. Prepare them in the following structure:
+MCSP loads TSV files and pre-extracted video and audio features. Prepare them in the following structure:
 
 ```text
 DATA_ROOT/

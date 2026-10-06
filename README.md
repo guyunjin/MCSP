@@ -10,7 +10,7 @@ Unsupervised multimodal intent discovery aims to identify latent intents from un
 
 ## 2. Dependencies
 
-Our environment uses **Python 3.9.23**, **PyTorch 2.8.0**, and **CUDA 12.8**. We recommend using Anaconda to create an environment:
+We recommend using Anaconda to create an environment:
 
 ```bash
 conda create -n mcsp python=3.9.23 pip=25.2 -y
@@ -26,11 +26,9 @@ python -m pip check
 
 ### 3.1 Data
 
-The data can be downloaded through the following links:
+The data can be downloaded through the following links: [Download data from Google Drive](https://drive.google.com/drive/folders/1nCkhkz72F6ucseB73XVbqCaDG-pjhpSS)
 
-[Download data from Google Drive](https://drive.google.com/drive/folders/1nCkhkz72F6ucseB73XVbqCaDG-pjhpSS)
-
-MCSP loads TSV utterance files and pre-extracted Swin video and WavLM audio features. Prepare them in the following structure:
+MCSP loads TSV utterance files and pre-extracted video and audio features. Prepare them in the following structure:
 
 ```text
 DATA_ROOT/
@@ -72,7 +70,7 @@ The dataset configurations are under [`configs/`](configs):
 | MIntRec2.0 | `mcsp_MIntRec2.py` | `swin_roi.pkl` | `wavlm_feats.pkl` |
 | MELD-DA | `mcsp_MELD-DA.py` | `swin_feats.pkl` | `wavlm_feats.pkl` |
 
-For a first run, set `pretrain=True`, `train=True`, `save_model=True`, and `use_llm=False` in the Python config before running an example script, since config values override same-named CLI arguments; with `use_llm=False`, the default workflow loads the bundled concept bank at `methods/unsupervised/MCSP/intent_concepts.json`, covering seeds `0`–`4` for all three datasets and requiring no API key or remote calls. To generate new concepts online, set `use_llm=True`, provide `MCSP_API_KEY` via the environment, configure a video-capable `llm_model_name` supported by the endpoint in `manager.py`, and review the raw-video paths and provider settings in `mllm_reasoning.py`.
+Set `use_llm=False` to use the bundled concept bank at `methods/unsupervised/MCSP/intent_concepts.json`, which covers seeds `0`–`4` for all three datasets and requires no API key or remote model calls. Set `use_llm=True` to generate new concepts online, which requires `MCSP_API_KEY` via the environment and a video-capable `llm_model_name` supported by the endpoint in `manager.py`; also review the raw-video paths and provider settings in `mllm_reasoning.py`. The bundled concept bank is the default workflow.
 
 ### 3.3 Run Training / Testing
 
@@ -92,22 +90,13 @@ bash examples/run_mcsp_mintrec2.sh
 bash examples/run_mcsp_meld.sh
 ```
 
-To reuse a saved pretraining checkpoint, set `pretrain=False` and `train=True`. For testing only, set `pretrain=False` and `train=False`, then run the same command with the dataset, seed, backbone, and output path used during training. Testing requires both the pretraining and final checkpoints:
-
-```text
-<output_path>/mcsp_mcsp_<dataset>_bert-base-uncased_<seed>/models/
-├── pretrain/
-│   └── pytorch_model.bin
-└── pytorch_model.bin
-```
-
 ## 4. Model
 
 The overview of MCSP:
 
 ![MCSP framework: multimodal pretraining, MLLM-guided concept generation, and semantic propagation](assets/framework.png)
 
-The framework has three stages:
+The method has three stages:
 
 1. **Multimodal unsupervised pretraining:** performs mask-based contrastive learning on multimodal inputs to establish a robust joint embedding space.
 2. **MLLM-guided concept generation:** leverages MLLM-guided reasoning to generate semantic concepts from high-quality representative samples.

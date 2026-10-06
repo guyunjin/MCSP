@@ -6,7 +6,7 @@ This repository provides the official PyTorch implementation of:
 
 ## 1. Introduction
 
-Unsupervised multimodal intent discovery aims to uncover latent intents from unlabeled multimodal dialogues, but remains challenging due to the lack of explicit semantic supervision. Existing methods often provide limited interpretability, as their refinement mainly relies on geometric similarity rather than high-level semantic guidance. To address these limitations, we propose MCSP, a fully unsupervised method that introduces semantic refinement based on concepts into multimodal intent discovery by integrating MLLM-guided contrastive reasoning with semantic propagation.
+Unsupervised multimodal intent discovery aims to uncover latent intents from unlabeled multimodal dialogues, but remains challenging due to the lack of explicit semantic supervision. Existing methods often provide limited interpretability, as their refinement mainly relies on geometric similarity rather than high-level semantic guidance. To address these limitations, we propose \textbf{MCSP}, a fully unsupervised method that introduces semantic refinement based on concepts into multimodal intent discovery.
 
 ## 2. Dependencies
 
@@ -70,7 +70,7 @@ The dataset configurations are under [`configs/`](configs):
 | MIntRec2.0 | `mcsp_MIntRec2.py` | `swin_roi.pkl` | `wavlm_feats.pkl` |
 | MELD-DA | `mcsp_MELD-DA.py` | `swin_feats.pkl` | `wavlm_feats.pkl` |
 
-Set `use_llm=False` to use the bundled concept bank at `methods/unsupervised/MCSP/intent_concepts.json`, which covers seeds `0`–`4` for all three datasets and requires no API key or remote model calls. Set `use_llm=True` to generate new concepts online, which requires `MCSP_API_KEY` via the environment and a video-capable `llm_model_name` supported by the endpoint in `manager.py`; also review the raw-video paths and provider settings in `mllm_reasoning.py`. The bundled concept bank is the default workflow.
+Set `use_llm=False` to use the bundled concept bank at `methods/unsupervised/MCSP/intent_concepts.json`, which covers seeds `0`–`4` for all three datasets and requires no API key or remote model calls. Set `use_llm=True` to generate new concepts online, which requires `MCSP_API_KEY` via the environment and a video-capable `llm_model_name` supported by the endpoint in `manager.py`.
 
 ### 3.3 Run Training / Testing
 

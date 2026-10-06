@@ -6,7 +6,7 @@ This repository provides the official PyTorch implementation of:
 
 ## 1. Introduction
 
-Unsupervised multimodal intent discovery aims to uncover latent intents from unlabeled multimodal dialogues, but remains challenging due to the lack of explicit semantic supervision. Existing methods often provide limited interpretability, as their refinement mainly relies on geometric similarity rather than high-level semantic guidance. To address these limitations, we propose \textbf{MCSP}, a fully unsupervised method that introduces semantic refinement based on concepts into multimodal intent discovery.
+Unsupervised multimodal intent discovery aims to uncover latent intents from unlabeled multimodal dialogues, but remains challenging due to the lack of explicit semantic supervision. Existing methods often provide limited interpretability, as their refinement mainly relies on geometric similarity rather than high-level semantic guidance. To address these limitations, we propose **MCSP**, a fully unsupervised method that introduces semantic refinement based on concepts into multimodal intent discovery.
 
 ## 2. Dependencies
 
